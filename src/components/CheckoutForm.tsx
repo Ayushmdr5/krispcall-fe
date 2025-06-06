@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import axios from "axios";
 
 const CARD_ELEMENT_OPTIONS = {
   style: {
@@ -34,7 +35,7 @@ const formStyle: React.CSSProperties = {
 const buttonStyle: React.CSSProperties = {
   marginTop: 24,
   padding: "12px 20px",
-  backgroundColor: "#6366f1", // Indigo 500
+  backgroundColor: "#6366f1",
   color: "white",
   fontWeight: "600",
   fontSize: "16px",
@@ -46,7 +47,7 @@ const buttonStyle: React.CSSProperties = {
 
 const buttonDisabledStyle: React.CSSProperties = {
   ...buttonStyle,
-  backgroundColor: "#a5b4fc", // Indigo 300, lighter for disabled
+  backgroundColor: "#a5b4fc",
   cursor: "not-allowed",
 };
 
@@ -57,17 +58,21 @@ const messageStyle: React.CSSProperties = {
 
 const errorStyle: React.CSSProperties = {
   ...messageStyle,
-  color: "#e53e3e", // red-600
+  color: "#e53e3e",
 };
 
 const successStyle: React.CSSProperties = {
   ...messageStyle,
-  color: "#38a169", // green-600
+  color: "#38a169",
 };
 
 const CheckoutForm: React.FC = () => {
   const stripe = useStripe();
   const elements = useElements();
+
+  // State for amount in cents
+  const [amount, setAmount] = useState(1000); // $10.00 default amount in cents
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -85,13 +90,13 @@ const CheckoutForm: React.FC = () => {
     }
 
     const cardElement = elements.getElement(CardElement);
-
     if (!cardElement) {
       setError("Card details not found.");
       setLoading(false);
       return;
     }
 
+    // Create payment method
     const { error: stripeError, paymentMethod } =
       await stripe.createPaymentMethod({
         type: "card",
@@ -104,22 +109,71 @@ const CheckoutForm: React.FC = () => {
       return;
     }
 
-    // TODO: send paymentMethod.id to your backend to create payment intent and confirm payment
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/payments/create-intent`,
+        {
+          payment_method: paymentMethod.id,
+          amount, // use the state amount here
+          currency: "usd",
+        }
+      );
 
-    setSuccess(true);
-    setLoading(false);
+      const clientSecret = response.data.clientSecret;
+
+      const confirmResult = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+        },
+      });
+
+      if (confirmResult.error) {
+        setError(confirmResult.error.message || "Payment confirmation failed.");
+        setLoading(false);
+        return;
+      }
+
+      if (
+        confirmResult.paymentIntent &&
+        confirmResult.paymentIntent.status === "succeeded"
+      ) {
+        setSuccess(true);
+      } else {
+        setError("Payment failed or was not completed.");
+      }
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Payment processing error."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper function to format cents to dollars string
+  const formatAmount = (amt: number) => {
+    return (amt / 100).toFixed(2);
   };
 
   return (
     <form onSubmit={handleSubmit} style={formStyle}>
+      <div style={{ marginBottom: 16, fontWeight: "600", fontSize: 18 }}>
+        <h3>Pro plan</h3>
+        Amount: ${formatAmount(amount)}
+      </div>
+
       <CardElement options={CARD_ELEMENT_OPTIONS} />
+
       <button
         type="submit"
         disabled={!stripe || loading}
         style={loading || !stripe ? buttonDisabledStyle : buttonStyle}
       >
-        {loading ? "Processing..." : "Pay"}
+        {loading ? "Processing..." : `Pay $${formatAmount(amount)}`}
       </button>
+
       {error && <div style={errorStyle}>{error}</div>}
       {success && <div style={successStyle}>Payment successful!</div>}
     </form>
