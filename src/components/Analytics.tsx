@@ -58,7 +58,7 @@ export function AnalyticsDashboard() {
       count: Number(count),
     })
   );
-  console.log("statusDistribution", statusDistribution);
+
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-12">
       <section>
