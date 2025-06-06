@@ -7,6 +7,7 @@ import { CreateProject } from "./pages/CreateProject"; // ✅ Import CreateProje
 import { JSX } from "react";
 import { EditProjectPage } from "./pages/EditProjectPage";
 import { ProjectListPage } from "./pages/ProjectList";
+import CheckoutForm from "./components/CheckoutForm";
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/stripe" element={<CheckoutForm />} />
 
           <Route
             path="/dashboard"

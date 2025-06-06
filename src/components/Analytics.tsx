@@ -21,9 +21,9 @@ import {
 } from "recharts";
 
 const STATUS_COLORS: Record<string, string> = {
-  completed: "#16a34a", // green
-  in_progress: "#ca8a04", // yellow
-  to_do: "#6b7280", // gray
+  completed: "#16a34a",
+  in_progress: "#ca8a04",
+  to_do: "#6b7280",
 };
 
 export function AnalyticsDashboard() {

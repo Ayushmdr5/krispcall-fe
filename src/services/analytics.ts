@@ -1,4 +1,4 @@
-import api from "../axios"; // your axios instance with interceptor
+import api from "../axios";
 
 export interface StatusDistribution {
   status: string;
@@ -6,7 +6,7 @@ export interface StatusDistribution {
 }
 
 export interface CreationTrend {
-  date: string; // e.g. "2025-05-01"
+  date: string;
   count: number;
 }
 
